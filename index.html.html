@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Payroll Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f2efe8;--card:#fff;--ink:#18181a;--muted:#777770;--border:#e0dbd0;--accent:#c8401a;--green:#2a5c3f;--blue:#5b9cf6;--amber:#92580a;--sans:'Plus Jakarta Sans',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font-family:var(--sans);color:var(--ink);min-height:100vh;font-size:14px}
+#landing{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+.landing-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:1rem}
+.landing-heading{font-size:32px;font-weight:700;color:var(--ink);margin-bottom:.5rem;text-align:center}
+.landing-sub{font-size:14px;color:var(--muted);margin-bottom:3rem;text-align:center}
+.company-cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:680px;width:100%}
+.company-card{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:2rem;cursor:pointer;transition:all .2s;text-align:center}
+.company-card:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,.1)}
+.company-card.kass{border-top:4px solid var(--accent)}.company-card.uht{border-top:4px solid var(--blue)}
+.cc-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem}
+.cc-icon.kass{background:#fde8e2}.cc-icon.uht{background:#e2eaf5}
+.cc-name{font-size:17px;font-weight:700;margin-bottom:4px}.cc-type{font-size:12px;color:var(--muted)}
+.cc-btn{margin-top:1.5rem;padding:10px 24px;border:none;border-radius:8px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;width:100%}
+.cc-btn.kass{background:var(--accent);color:#fff}.cc-btn.uht{background:var(--blue);color:#fff}
+#app{display:none}
+header{background:var(--ink);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:17px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
+.back-btn{font-size:12px;font-weight:600;color:rgba(255,255,255,.6);cursor:pointer;padding:5px 12px;border:1px solid rgba(255,255,255,.2);border-radius:20px}
+.back-btn:hover{color:#fff}
+.header-right{display:flex;align-items:center;gap:12px}
+.rate-pill{font-size:12px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:5px 14px;color:#fff;display:flex;align-items:center;gap:8px}
+.rdot{width:7px;height:7px;border-radius:50%;background:#777770;flex-shrink:0}
+.rdot.live{background:#4ade80}
+.rdot.offline{background:#f0c040;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--card);padding:0 1.5rem;overflow-x:auto}
+.tab{padding:13px 16px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;transition:all .18s;white-space:nowrap}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab.active.uht-t{color:var(--blue);border-bottom-color:var(--blue)}
+.main{max-width:1100px;margin:0 auto;padding:1.5rem}
+.panel{display:none}.panel.active{display:block}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted)}
+select,input[type=number],input[type=text]{padding:9px 12px;font-size:13px;font-family:var(--sans);border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--ink);outline:none;transition:border-color .18s;width:100%}
+select:focus,input:focus{border-color:var(--accent)}
+.span2{grid-column:1/-1}
+.btn-primary{padding:10px 18px;font-family:var(--sans);font-size:13px;font-weight:700;background:var(--ink);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:background .18s;text-transform:uppercase;white-space:nowrap}
+.btn-primary:hover{background:var(--accent)}
+.btn-green{background:var(--green)}.btn-green:hover{background:#1e4530}
+.btn-amber{background:var(--amber);color:#fff}.btn-amber:hover{background:#7a4a08}
+.btn-sm{padding:6px 12px;font-size:12px}
+/* RESULT */
+.result-wrap{margin-top:1.5rem;display:none}
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);margin-bottom:.75rem}
+.rcard{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:12px}
+.rcard-head{background:var(--ink);padding:1rem 1.25rem;display:flex;align-items:center;gap:12px}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+.rh-name{font-size:15px;font-weight:700;color:#fff}.rh-role{font-size:11px;color:rgba(255,255,255,.45);margin-top:1px}
+.rh-badge{margin-left:auto;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.badge-usd{background:rgba(200,64,26,.28);color:#ff9a7a}.badge-egp{background:rgba(42,92,63,.38);color:#7dd9a4}
+.rcard-body{padding:1.1rem 1.25rem}
+.bk{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:1rem}
+.bi{background:var(--bg);border-radius:8px;padding:11px 12px}
+.bi .bl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:4px}
+.bi .bv{font-size:16px;font-weight:700;color:var(--ink)}.bv.neg{color:var(--accent)}.bv.pos{color:var(--green)}
+.final-bar{display:flex;align-items:center;justify-content:space-between;background:var(--ink);border-radius:10px;padding:.9rem 1.25rem}
+.final-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:rgba(255,255,255,.45)}
+.final-num{font-size:26px;font-weight:700;color:#fff;line-height:1.1}
+.final-egp{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px}
+.save-btn{padding:9px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.save-btn:hover{background:#a33214}
+.nbe-note{font-size:11px;color:var(--muted);margin-top:8px;text-align:center}
+/* BATCH — no scroll, compact */
+.batch-controls{display:flex;gap:10px;align-items:flex-end;margin-bottom:1.25rem;flex-wrap:wrap}
+.batch-controls .field{flex:1;min-width:110px}
+.btable-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.btable{width:100%;border-collapse:collapse;table-layout:fixed}
+.btable th{padding:8px 6px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg);text-align:left}
+.btable td{padding:6px 6px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle}
+.btable tr:last-child td{border-bottom:none}
+.btable tr:hover td{background:#faf8f4}
+.btable input[type=number]{padding:3px 5px;font-size:12px;border-radius:5px;border:1px solid var(--border);font-family:var(--sans);background:var(--bg);width:100%}
+.col-emp{width:13%}.col-role{width:9%}.col-base{width:8%}.col-ded{width:6%}.col-ot{width:6%}
+.col-dedamt{width:8%}.col-otamt{width:8%}.col-loan{width:8%}.col-net{width:9%}.col-egp{width:11%}
+.batch-footer{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1rem;border-top:1px solid var(--border);background:var(--bg)}
+.batch-total{font-size:13px;color:var(--muted)}.batch-total strong{font-size:15px;color:var(--ink);font-weight:700}
+/* LOANS TAB */
+.loan-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.loan-header h2{font-size:18px;font-weight:700}
+.loan-form{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;display:grid;grid-template-columns:repeat(5,1fr) auto;gap:10px;align-items:flex-end}
+.loan-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.loan-badge.active{background:#fef3c7;color:#92580a}
+.loan-badge.done{background:#e2f0e8;color:#1e4530}
+.ltable-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.ltable{width:100%;border-collapse:collapse;font-size:13px}
+.ltable th{padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg);text-align:left}
+.ltable td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.ltable tr:last-child td{border-bottom:none}
+.ltable tr:hover td{background:#faf8f4}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;margin-top:4px;overflow:hidden}
+.progress-fill{height:100%;background:var(--amber);border-radius:3px;transition:width .3s}
+.progress-fill.done{background:var(--green)}
+/* DB */
+.db-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+.db-header h2{font-size:18px;font-weight:700}
+.db-table-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1rem}
+.dbtable{width:100%;border-collapse:collapse;font-size:13px}
+.dbtable th{padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg);text-align:left}
+.dbtable td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.dbtable tr:last-child td{border-bottom:none}
+.dbtable input[type=text],.dbtable input[type=number]{padding:5px 8px;font-size:13px;font-family:var(--sans);border:1px solid var(--border);border-radius:6px;background:var(--bg);width:100%}
+.dbtable input:focus{border-color:var(--accent);outline:none;background:#fff}
+.dbtable select{padding:5px 8px;font-size:12px;border-radius:6px;font-family:var(--sans);border:1px solid var(--border)}
+.icon-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:3px 6px;border-radius:5px}
+.icon-btn:hover{color:var(--accent);background:#fde8e2}
+.add-row-btn{width:100%;padding:10px;background:transparent;border:1.5px dashed var(--border);border-radius:0 0 12px 12px;color:var(--muted);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer}
+.add-row-btn:hover{border-color:var(--accent);color:var(--accent);background:#fdf5f3}
+/* REPORT */
+.report-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
+.report-header h2{font-size:18px;font-weight:700}
+.rtable-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:auto}
+.rtable{width:100%;border-collapse:collapse;font-size:13px;min-width:700px}
+.rtable th{padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg);text-align:left;white-space:nowrap}
+.rtable td{padding:9px 12px;border-bottom:1px solid var(--border)}
+.rtable tr:last-child td{border-bottom:none}
+.rtable tr:hover td{background:#faf8f4}
+.del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:2px 5px;border-radius:4px}
+.del-btn:hover{color:var(--accent)}
+.filter-row{display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
+.filter-row select{padding:7px 12px;font-size:13px;width:auto}
+.empty-msg{text-align:center;padding:2.5rem;color:var(--muted)}
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok::before{content:'✓ ';color:#4ade80}.toast.err::before{content:'✕ ';color:#f87171}
+.sort-btn{padding:7px 12px;font-size:12px;font-weight:600;background:var(--bg);border:1px solid var(--border);border-radius:7px;cursor:pointer;color:var(--muted);font-family:var(--sans)}
+.sort-btn:hover{border-color:var(--ink);color:var(--ink)}
+.sync-status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-bottom:1rem}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.sync-dot.synced{background:#4ade80}
+
+@media(max-width:600px){.fg{grid-template-columns:1fr}.bk{grid-template-columns:1fr 1fr}.main{padding:1rem}.company-cards{grid-template-columns:1fr}.loan-form{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- LANDING -->
+<div id="landing">
+  <p class="landing-title">Payroll Hub</p>
+  <h1 class="landing-heading">Select a Company</h1>
+  <p class="landing-sub">Each company has its own employees, records and reports</p>
+  <div class="company-cards">
+    <div class="company-card kass" onclick="openCompany('kass')">
+      <div class="cc-icon kass"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c8401a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 4v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+      <div class="cc-name">Kass Logistics</div><div class="cc-type">Payroll Management</div>
+      <button class="cc-btn kass">Open →</button>
+    </div>
+    <div class="company-card uht" onclick="openCompany('uht')">
+      <div class="cc-icon uht"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5b9cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 4v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+      <div class="cc-name">United Hands Transport</div><div class="cc-type">Payroll Management</div>
+      <button class="cc-btn uht">Open →</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="logo" id="appLogo"></div>
+    <div class="header-right">
+      <div class="rate-pill"><div class="rdot" id="rdot"></div><span id="rateDisplay">Fetching rate…</span></div>
+      <div onclick="localStorage.removeItem('cbe-rate-v5');fetchRate();" style="font-size:11px;color:rgba(255,255,255,.5);cursor:pointer;padding:5px 10px;border:1px solid rgba(255,255,255,.15);border-radius:20px;" title="Force refresh rate from CBE">↻ Rate</div>
+      <div class="back-btn" onclick="goHome()">← All Companies</div>
+    </div>
+  </header>
+  <div class="tabs" id="appTabs">
+    <div class="tab active" onclick="switchTab('calc')">Calculator</div>
+    <div class="tab" onclick="switchTab('batch')">Batch Run</div>
+    <div class="tab" onclick="switchTab('loans')">Loans</div>
+    <div class="tab" onclick="switchTab('db')">Database</div>
+    <div class="tab" onclick="switchTab('report')">Monthly Report</div>
+  </div>
+  <div class="main">
+
+    <!-- CALCULATOR -->
+    <div class="panel active" id="panel-calc">
+      <div class="fg">
+        <div class="field span2"><label>Employee</label><select id="empSelect"><option value="">— select employee —</option></select></div>
+        <div class="field"><label>Deduction Days</label><input type="number" id="dedDays" value="0" min="0" max="30" step="0.5"/></div>
+        <div class="field"><label>Overtime Days</label><input type="number" id="otDays" value="0" min="0" max="30" step="0.5"/></div>
+        <div class="field"><label>Month</label><select id="monthSel"></select></div>
+        <div class="field"><label>Year</label><input type="number" id="yearInp" min="2024" max="2030"/></div>
+        <div class="span2"><button class="btn-primary" style="width:100%" onclick="calculate()">Calculate Salary</button></div>
+      </div>
+      <div class="result-wrap" id="resultWrap">
+        <p class="section-label">Result</p>
+        <div class="rcard">
+          <div class="rcard-head">
+            <div class="avatar" id="avat"></div>
+            <div><div class="rh-name" id="resName"></div><div class="rh-role" id="resRole"></div></div>
+            <span class="rh-badge" id="resBadge"></span>
+          </div>
+          <div class="rcard-body">
+            <div class="bk">
+              <div class="bi"><div class="bl">Base Salary</div><div class="bv" id="bBase"></div></div>
+              <div class="bi"><div class="bl">Daily Rate</div><div class="bv" id="bDay"></div></div>
+              <div class="bi"><div class="bl">Deduction</div><div class="bv neg" id="bDed"></div></div>
+              <div class="bi"><div class="bl">Overtime</div><div class="bv pos" id="bOT"></div></div>
+            </div>
+            <div class="final-bar">
+              <div><div class="final-lbl">Net Salary</div><div class="final-num" id="fNet"></div><div class="final-egp" id="fConv"></div></div>
+              <button class="save-btn" onclick="saveOne()">Save to Report ↓</button>
+            </div>
+          </div>
+        </div>
+        <p class="nbe-note" id="rateNote"></p>
+      </div>
+    </div>
+
+    <!-- BATCH RUN -->
+    <div class="panel" id="panel-batch">
+      <div class="batch-controls">
+        <div class="field"><label>Month</label><select id="batchMonth"></select></div>
+        <div class="field"><label>Year</label><input type="number" id="batchYear" min="2024" max="2030" style="width:90px"/></div>
+        <div class="field" id="batchRateField">
+          <label>Exchange Rate (USD→EGP)</label>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer">
+              <input type="radio" name="batchRateMode" value="auto" checked onchange="toggleBatchRate(this.value)"/> Auto (live rate)
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer">
+              <input type="radio" name="batchRateMode" value="manual" onchange="toggleBatchRate(this.value)"/> Manual
+            </label>
+            <span id="batchRateAutoLabel" style="font-size:12px;color:var(--muted)">≈ <b id="batchRateAutoVal">--</b> EGP</span>
+            <input type="number" id="batchRateManual" placeholder="e.g. 52.65" step="0.0001" min="1" style="display:none;width:110px;padding:5px 8px;font-size:12px;border:1px solid var(--border);border-radius:7px;font-family:var(--sans)"/>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="runBatch()">⚡ Run All Employees</button>
+        <button class="btn-primary btn-green" onclick="saveBatch()">💾 Save All to Report</button>
+      </div>
+      <div id="batchSavedBanner" style="display:none;margin:10px 0;padding:12px 16px;background:#dcfce7;border:1px solid #86efac;border-radius:10px;font-size:13px;color:#166534;font-weight:600"></div>
+      <div id="batchResults" style="display:none">
+        <div class="btable-wrap">
+          <table class="btable">
+            <thead><tr>
+              <th class="col-emp">Employee</th>
+              <th class="col-role">Role</th>
+              <th class="col-base">Base</th>
+              <th class="col-ded">Ded.<br/>Days</th>
+              <th class="col-ot">OT<br/>Days</th>
+              <th class="col-pct">Percentage</th>
+              <th class="col-dedamt">Deduction</th>
+              <th class="col-otamt">Overtime</th>
+              <th class="col-loan">Loan/mo</th>
+              <th class="col-net">Net USD</th>
+              <th class="col-egp">Net EGP</th>
+            </tr></thead>
+            <tbody id="batchBody"></tbody>
+          </table>
+          <div class="batch-footer">
+            <div class="batch-total">Total (USD): <strong id="batchTotalUSD">—</strong></div>
+            <div class="batch-total">Total EGP: <strong id="batchTotalEGP">—</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOANS -->
+    <div class="panel" id="panel-loans">
+      <div class="loan-header">
+        <h2>Loan Manager</h2>
+        <span style="font-size:12px;color:var(--muted)">Deductions start the month <b>after</b> the loan is registered</span>
+      </div>
+      <div class="loan-form" id="loanForm">
+        <div class="field"><label>Employee</label><select id="loanEmp"></select></div>
+        <div class="field"><label>Loan Amount</label><input type="number" id="loanAmt" placeholder="e.g. 500" min="0" step="0.01"/></div>
+        <div class="field"><label>Currency</label><select id="loanCurrency"><option value="USD">USD</option><option value="EGP">EGP</option></select></div>
+        <div class="field"><label>Months to Repay</label><input type="number" id="loanMonths" value="3" min="1" max="60"/></div>
+        <div class="field"><label>Taken in Month</label><select id="loanStartMonth"></select></div>
+        <div class="field"><label>Year</label><input type="number" id="loanStartYear" min="2024" max="2030"/></div>
+        <button class="btn-primary btn-amber" onclick="addLoan()" style="align-self:flex-end">+ Add Loan</button>
+      </div>
+      <div class="ltable-wrap">
+        <table class="ltable">
+          <thead><tr><th>Employee</th><th>Amount</th><th>Monthly</th><th>Start</th><th>Deductions Run</th><th>Progress</th><th>Status</th><th></th></tr></thead>
+          <tbody id="loansBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DATABASE -->
+    <div class="panel" id="panel-db">
+      <div class="db-header">
+        <h2>Database</h2>
+        <div style="display:flex;gap:8px">
+          <button class="sort-btn" onclick="sortEmployees()">⇅ Sort A–Z</button>
+          <button class="btn-primary btn-green" onclick="saveDB()">Save Changes</button>
+        </div>
+      </div>
+      <div class="sync-status"><div class="sync-dot synced" id="syncDot"></div><span id="syncLabel">Local storage</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem">
+        <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:12px 14px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--accent);margin-bottom:5px">Deduction Formula</div>
+          <div style="font-size:13px;color:var(--ink);line-height:1.6">Base is always <b>$300 ÷ 20 days = $15/day</b><br/>Deduction = $15 × absent days</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:8px;padding:12px 14px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--green);margin-bottom:5px">Overtime Formula</div>
+          <div style="font-size:13px;color:var(--ink);line-height:1.6">Flat rate: <b>20.45 / Day</b><br/>Custom rate per employee overrides this</div>
+        </div>
+      </div>
+      <div class="db-table-wrap">
+        <table class="dbtable">
+          <thead><tr><th>#</th><th>Name</th><th>Role</th><th>Fixed Salary</th><th>Currency</th><th></th></tr></thead>
+          <tbody id="dbBody"></tbody>
+        </table>
+        <button class="add-row-btn" onclick="addEmployee()">+ Add Employee</button>
+      </div>
+    </div>
+
+    <!-- MONTHLY REPORT -->
+    <div class="panel" id="panel-report">
+      <div class="report-header">
+        <h2>Monthly Report</h2>
+        <button class="btn-primary btn-green" onclick="exportExcel()">⬇ Export Excel</button>
+      </div>
+      <div class="filter-row">
+        <select id="filterMonth" onchange="renderReport()"><option value="">All months</option></select>
+        <select id="filterYear" onchange="renderReport()"><option value="">All years</option></select>
+      </div>
+      <div class="rtable-wrap">
+        <table class="rtable">
+          <thead><tr><th>Employee</th><th>Month</th><th>Base</th><th>Ded.</th><th>OT</th><th>Loan/mo</th><th>Net USD</th><th>Net EGP</th><th>Rate</th><th></th></tr></thead>
+          <tbody id="reportBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+var WORKING_DAYS=20,DED_BASE=300;
+var usdEgpRate=null,lastCalc=null,batchRows=[],currentCompany=null;
+var employees=[],reportData=[],loans=[];
+
+var COMPANIES={
+  kass:{id:'kass',name:'Kass Logistics',payrollName:'Kass Payroll',color:'#c8401a',
+    sEmp:'kass-emp',sRep:'kass-rep',sLoans:'kass-loans',
+    defaultEmp:[
+      {name:"3azooz",role:"Track & Trace",salary:350,currency:"USD",otRate:20.45},
+      {name:"3bdo",role:"Office Boy",salary:7200,currency:"EGP",otRate:null},
+      {name:"Abdallah Gaafar",role:"Dispatch",salary:500,currency:"USD",otRate:null},
+      {name:"Abdelrahman Hani",role:"Accounting",salary:450,currency:"USD",otRate:null},
+      {name:"Ahmed Hashem",role:"Dispatch & IT",salary:400,currency:"USD",otRate:null},
+      {name:"Ahmed Mamdoh",role:"Data Entry",salary:300,currency:"USD",otRate:null},
+      {name:"Fadi Sherif",role:"Track & Trace",salary:300,currency:"USD",otRate:null},
+      {name:"Fahd Hashem",role:"Safety",salary:300,currency:"USD",otRate:null},
+      {name:"Mahmoud Osama",role:"Track & Trace",salary:413,currency:"USD",otRate:null},
+      {name:"Mostafa Waleed",role:"Track & Trace",salary:300,currency:"USD",otRate:null},
+      {name:"Mostafa Zohery",role:"Track & Trace",salary:300,currency:"USD",otRate:null},
+      {name:"Mohamed Ashraf Ka3bash",role:"Dispatch",salary:350,currency:"USD",otRate:null},
+      {name:"Omar",role:"Dispatch",salary:600,currency:"USD",otRate:null},
+      {name:"Joey",role:"Manager",salary:800,currency:"USD",otRate:null}
+    ]},
+  uht:{id:'uht',name:'United Hands Transport',payrollName:'United Hands Transport Payroll',color:'#5b9cf6',
+    sEmp:'uht-emp',sRep:'uht-rep',sLoans:'uht-loans',defaultEmp:[]}
+};
+
+/* ── LOAN HELPERS ── */
+// Returns year/month index (months since year 0) for easy comparison
+function toMonthIndex(year,monthIdx){return year*12+monthIdx;}
+// Given a loan, return which month indices are deduction months
+// Deduction starts the month AFTER the loan month, for N months
+function loanDeductionMonths(loan){
+  var start=toMonthIndex(loan.startYear,loan.startMonthIdx)+1; // next month
+  var months=[];
+  for(var i=0;i<loan.months;i++) months.push(start+i);
+  return months;
+}
+// Get monthly deduction for a loan in a specific year/monthIdx (0-based)
+function getLoanDeduction(loan,year,monthIdx){
+  var target=toMonthIndex(year,monthIdx);
+  var deductMonths=loanDeductionMonths(loan);
+  if(deductMonths.indexOf(target)!==-1) return loan.amount/loan.months;
+  return 0;
+}
+// How many installments have been paid up to (not including) a given month
+function loanInstallmentsPaid(loan,upToYear,upToMonthIdx){
+  var target=toMonthIndex(upToYear,upToMonthIdx);
+  var deductMonths=loanDeductionMonths(loan);
+  return deductMonths.filter(function(m){return m<target;}).length;
+}
+function loanIsSettled(loan){
+  var now=new Date();
+  var deductMonths=loanDeductionMonths(loan);
+  var lastMonth=deductMonths[deductMonths.length-1];
+  return toMonthIndex(now.getFullYear(),now.getMonth())>lastMonth;
+}
+// Get all active loan deductions for an employee in a given month
+function getEmployeeLoanDeduction(empName,year,monthIdx){
+  var total=0;
+  loans.filter(function(l){return l.employee===empName;}).forEach(function(l){
+    // Month loan was taken: employee RECEIVES full amount (negative = add to salary)
+    if(l.startYear===year&&l.startMonthIdx===monthIdx){
+      total-=l.amount;
+    } else {
+      total+=getLoanDeduction(l,year,monthIdx);
+    }
+  });
+  return total;
+}
+
+
+
+/* ── SUPABASE CONFIG ── */
+// ⚡ Paste your Supabase credentials here once — works for all users automatically
+var SUPABASE_URL = 'https://sfkvgjuxgmmdbetaszez.supabase.co';       // e.g. https://xxxx.supabase.co
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNma3ZnanV4Z21tZGJldGFzemV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjQ3NjcsImV4cCI6MjA5MzcwMDc2N30.RkwxFYwN8CuE1C21dT4kKw48ZIdC-G1YwV-GujhwQx8'; // anon/public key from Supabase Settings → API
+
+var IS_HOSTED = window.location.protocol==='https:' || window.location.protocol==='http:';
+var IS_VERCEL = IS_HOSTED;
+
+function hasSbConfig(){
+  return SUPABASE_URL.indexOf('YOUR_') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_') === -1;
+}
+
+async function sbFetch(method, table, params, body){
+  var url = SUPABASE_URL + '/rest/v1/' + table + (params||'');
+  var opts = {
+    method: method || 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Prefer': method === 'POST' ? 'return=representation' : ''
+    }
+  };
+  if(body) opts.body = JSON.stringify(body);
+  var r = await fetch(url, opts);
+  if(!r.ok){ var t=await r.text(); throw new Error('Supabase '+r.status+': '+t); }
+  var txt = await r.text();
+  return txt ? JSON.parse(txt) : [];
+}
+
+async function apiFetch(path,method,body){ return []; }
+
+/* ── JSONBIN SYNC ── */
+var JB_BIN='69fc67dc250b1311c3178268';
+var JB_KEY='$2a$10$eEyBaSyre8utO5M3uBp0h.oV2vAtsWC.H1GsxkXQsOG19B16O7Mua';
+var JB_URL='https://api.jsonbin.io/v3/b/'+JB_BIN;
+var _jbCache=null;
+
+async function jbRead(){
+  if(_jbCache)return _jbCache;
+  var r=await fetch(JB_URL+'/latest',{headers:{'X-Master-Key':JB_KEY,'X-Bin-Meta':'false'}});
+  if(!r.ok)throw new Error('JSONBin read '+r.status);
+  _jbCache=await r.json();
+  return _jbCache;
+}
+
+async function jbWrite(data){
+  var r=await fetch(JB_URL,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY},
+    body:JSON.stringify(data)
+  });
+  if(!r.ok)throw new Error('JSONBin write '+r.status);
+  _jbCache=null; // clear cache after write so next read fetches fresh
+}
+
+/* ── SYNC STATUS ── */
+function setSyncStatus(state,label){
+  var dot=document.getElementById('syncDot');
+  var lbl=document.getElementById('syncLabel');
+  if(dot)dot.className='sync-dot'+(state==='synced'?' synced':'');
+  if(lbl)lbl.textContent=label||'';
+}
+
+/* ── OPEN COMPANY ── */
+async function openCompany(id){
+  _jbCache=null; // always fetch fresh from JSONBin
+  currentCompany=COMPANIES[id];
+  var c=currentCompany.color;
+  var words=currentCompany.payrollName.split(' ');
+  document.getElementById('appLogo').innerHTML=
+    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 4v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>'+
+    '<span style="color:#fff">'+words[0]+' </span><span style="color:'+c+'">'+words.slice(1).join(' ')+'</span>';
+  var isUHT=id==='uht';
+  document.querySelectorAll('.tab').forEach(function(t){isUHT?t.classList.add('uht-t'):t.classList.remove('uht-t');});
+  document.getElementById('landing').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.title=currentCompany.payrollName;
+  switchTab('calc');
+
+  if(IS_HOSTED){
+    setSyncStatus('syncing','Loading from database…');
+    try{
+      var jb=await jbRead();
+      var co=jb[id]||{employees:[],loans:[],payroll:[]};
+      employees=(co.employees||[]);
+      if(!employees.length&&currentCompany.defaultEmp.length){
+        employees=JSON.parse(JSON.stringify(currentCompany.defaultEmp));
+        jb[id]=jb[id]||{};
+        jb[id].employees=employees;
+        await jbWrite(jb);
+      }
+      localStorage.setItem(currentCompany.sEmp,JSON.stringify(employees));
+      loans=(co.loans||[]);
+      localStorage.setItem(currentCompany.sLoans,JSON.stringify(loans));
+      reportData=(co.payroll||[]);
+      localStorage.setItem(currentCompany.sRep,JSON.stringify(reportData));
+      setSyncStatus('synced','✅ Synced · '+new Date().toLocaleTimeString());
+    }catch(e){
+      console.error('JSONBin load error:',e);
+      employees=JSON.parse(localStorage.getItem(currentCompany.sEmp)||JSON.stringify(currentCompany.defaultEmp));
+      loans=JSON.parse(localStorage.getItem(currentCompany.sLoans)||'[]');
+      reportData=JSON.parse(localStorage.getItem(currentCompany.sRep)||'[]');
+      setSyncStatus('','DB error — using local data');
+    }
+  } else {
+    // Local file — try Firebase, fallback to localStorage
+    employees=JSON.parse(localStorage.getItem(currentCompany.sEmp)||JSON.stringify(currentCompany.defaultEmp));
+    loans=JSON.parse(localStorage.getItem(currentCompany.sLoans)||'[]');
+    reportData=JSON.parse(localStorage.getItem(currentCompany.sRep)||'[]');
+    setSyncStatus('synced','Saved locally on this browser');
+  }
+  populateSelects();
+}
+
+function goHome(){
+  document.getElementById('app').style.display='none';
+  document.getElementById('landing').style.display='flex';
+  document.title='Payroll Hub';
+  currentCompany=null;
+  document.getElementById('batchResults').style.display='none';
+  document.getElementById('resultWrap').style.display='none';
+}
+
+/* ── TOAST ── */
+var toastTimer=null;
+function toast(msg,type){
+  var el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className='toast '+(type||'ok')+' show';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){el.classList.remove('show');},2800);
+}
+
+/* ── CALC ENGINE ── */
+function calcSalary(emp,ded,ot){
+  var isEGP=emp.currency==='EGP';
+  var dailyDed=isEGP?(emp.salary/WORKING_DAYS):(DED_BASE/WORKING_DAYS);
+  var dedAmt=ded*dailyDed;
+  var otAmt=emp.otRate?ot*emp.otRate:ot*20.45;
+  var net=emp.salary-dedAmt+otAmt;
+  var netEGP=isEGP?net:(usdEgpRate?net*usdEgpRate:null);
+  return{isEGP:isEGP,dailyDed:dailyDed,dedAmt:dedAmt,otAmt:otAmt,net:net,netEGP:netEGP};
+}
+function initials(n){return n.replace(/[^a-zA-Z ]/g,'').trim().split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase()||n.substring(0,2).toUpperCase();}
+function fmtUSD(n){return'$'+n.toFixed(2);}
+function fmtEGP(n){return'EGP '+Math.round(n).toLocaleString();}
+function fmt(n,isEGP){return isEGP?fmtEGP(n):fmtUSD(n);}
+
+/* ── CALCULATOR ── */
+function calculate(){
+  var idx=document.getElementById('empSelect').value;
+  if(idx===''){toast('Please select an employee','err');return;}
+  var emp=employees[parseInt(idx)];
+  var ded=parseFloat(document.getElementById('dedDays').value)||0;
+  var ot=parseFloat(document.getElementById('otDays').value)||0;
+  var month=parseInt(document.getElementById('monthSel').value)-1;
+  var year=parseInt(document.getElementById('yearInp').value);
+  var r=calcSalary(emp,ded,ot);
+  var loanDed=getEmployeeLoanDeduction(emp.name,year,month);
+  var finalNet=r.net-loanDed;
+  var finalEGP=r.isEGP?finalNet:(usdEgpRate?finalNet*usdEgpRate:null);
+
+  document.getElementById('avat').textContent=initials(emp.name);
+  document.getElementById('resName').textContent=emp.name;
+  document.getElementById('resRole').textContent=emp.role;
+  document.getElementById('resBadge').textContent=r.isEGP?'EGP Fixed':'USD';
+  document.getElementById('resBadge').className='rh-badge '+(r.isEGP?'badge-egp':'badge-usd');
+  document.getElementById('bBase').textContent=r.isEGP?fmtEGP(emp.salary):fmtUSD(emp.salary);
+  document.getElementById('bDay').textContent=(r.isEGP?'EGP '+r.dailyDed.toFixed(0):fmtUSD(r.dailyDed))+'/day';
+  document.getElementById('bDed').textContent=ded>0?(r.isEGP?'−EGP '+Math.round(r.dedAmt).toLocaleString():'−'+fmtUSD(r.dedAmt)):'—';
+  document.getElementById('bOT').textContent=ot>0?(r.isEGP?'+EGP '+Math.round(r.otAmt).toLocaleString():'+'+fmtUSD(r.otAmt)):'—';
+  document.getElementById('fNet').textContent=r.isEGP?fmtEGP(finalNet):fmtUSD(finalNet);
+  document.getElementById('fConv').textContent=(!r.isEGP&&finalEGP)?'≈ '+fmtEGP(finalEGP)+' @ '+usdEgpRate.toFixed(2):(loanDed>0?' (incl. loan −'+fmtUSD(loanDed)+')'  :'');
+  document.getElementById('resultWrap').style.display='block';
+  lastCalc={employee:emp.name,role:emp.role,month:MONTHS[month],year:year,currency:emp.currency,base:emp.salary,deductDays:ded,deductAmt:parseFloat(r.dedAmt.toFixed(2)),otDays:ot,otAmt:parseFloat(r.otAmt.toFixed(2)),loanMonthly:parseFloat(loanDed.toFixed(2)),netUSD:r.isEGP?null:parseFloat(finalNet.toFixed(2)),netEGP:finalEGP?Math.round(finalEGP):null,rate:(!r.isEGP&&usdEgpRate)?parseFloat(usdEgpRate.toFixed(2)):null};
+}
+
+function saveOne(){
+  if(!lastCalc)return;
+  upsertReport(lastCalc);
+  toast(lastCalc.employee+' saved to report');
+}
+
+async function upsertReport(rec){
+  reportData=reportData.filter(function(x){return!(x.employee===rec.employee&&x.month===rec.month&&x.year===rec.year);});
+  reportData.push(rec);
+  localStorage.setItem(currentCompany.sRep,JSON.stringify(reportData));
+  if(IS_HOSTED){
+    try{
+      var jb=await jbRead();
+      jb[currentCompany.id]=jb[currentCompany.id]||{};
+      var pays=jb[currentCompany.id].payroll||[];
+      pays=pays.filter(function(x){return!(x.employee===rec.employee&&x.month===rec.month&&x.year===rec.year);});
+      pays.push(rec);
+      jb[currentCompany.id].payroll=pays;
+      await jbWrite(jb);
+    }catch(e){console.error('upsertReport:',e);}
+  }
+}
+
+/* ── BATCH ── */
+function toggleBatchRate(mode){
+  document.getElementById('batchRateAutoLabel').style.display = mode==='auto'?'':'none';
+  document.getElementById('batchRateManual').style.display = mode==='manual'?'':'none';
+}
+
+function getBatchRate(){
+  var mode=document.querySelector('input[name="batchRateMode"]:checked').value;
+  if(mode==='manual'){
+    var v=parseFloat(document.getElementById('batchRateManual').value);
+    if(!v||v<1){toast('Enter a valid manual exchange rate','err');return null;}
+    return v;
+  }
+  if(!usdEgpRate){toast('Live rate not loaded yet — wait a moment or use manual','err');return null;}
+  return usdEgpRate;
+}
+
+function runBatch(){
+  var month=parseInt(document.getElementById('batchMonth').value)-1;
+  var year=parseInt(document.getElementById('batchYear').value);
+  var rateToUse=getBatchRate();
+  if(rateToUse===null)return;
+  // Temporarily override usdEgpRate for this batch run
+  var _prevRate=usdEgpRate;
+  usdEgpRate=rateToUse;
+  batchRows=[];
+  document.getElementById('batchSavedBanner').style.display='none';
+  var tbody=document.getElementById('batchBody');
+  tbody.innerHTML='';
+  employees.forEach(function(emp,i){
+    var loanDed=getEmployeeLoanDeduction(emp.name,year,month);
+    var row={emp:emp,ded:0,ot:0,pct:0,loanDed:loanDed,month:month,year:year};
+    batchRows.push(row);
+    var tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td style="font-weight:600;font-size:12px">'+emp.name+'</td>'+
+      '<td style="color:var(--muted);font-size:11px">'+emp.role+'</td>'+
+      '<td style="font-size:12px">'+(emp.currency==='EGP'?'EGP '+emp.salary.toLocaleString():'$'+emp.salary)+'</td>'+
+      '<td><input type="number" value="0" min="0" max="30" step="0.5" onchange="recalcRow('+i+',\'ded\',this.value)"/></td>'+
+      '<td><input type="number" value="0" min="0" max="30" step="0.5" onchange="recalcRow('+i+',\'ot\',this.value)"/></td>'+
+      '<td><input type="number" value="0" min="0" step="0.01" placeholder="0" style="width:70px" onchange="recalcRow('+i+',\'pct\',this.value)" title="Extra amount (bonus/commission)"/></td>'+
+      '<td id="bded'+i+'" style="color:var(--accent);font-size:12px">—</td>'+
+      '<td id="bot'+i+'" style="color:var(--green);font-size:12px">—</td>'+
+      '<td id="bloan'+i+'" style="font-weight:600;font-size:12px;color:'+(loanDed<0?'var(--green)':loanDed>0?'var(--accent)':'var(--muted)')+'">'+(loanDed<0?'+'+(emp.currency==='EGP'?fmtEGP(-loanDed):fmtUSD(-loanDed))+'<br/><span style=\'font-size:10px;font-weight:400\'>received</span>':loanDed>0?'−'+(emp.currency==='EGP'?fmtEGP(loanDed):fmtUSD(loanDed))+'<br/><span style=\'font-size:10px;font-weight:400\'>deducted</span>':'—')+'</td>'+
+      '<td><span class="net" id="bnet'+i+'" style="font-size:12px">'+(emp.currency==='USD'?fmtUSD(emp.salary-loanDed):'—')+'</span></td>'+
+      '<td id="begp'+i+'" style="color:var(--muted);font-size:11px">'+(emp.currency==='EGP'?fmtEGP(emp.salary-loanDed):(usdEgpRate?fmtEGP((emp.salary-loanDed)*usdEgpRate):'—'))+'</td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById('batchResults').style.display='block';
+  updateBatchTotals();
+}
+
+function recalcRow(i,field,val){
+  var row=batchRows[i];
+  if(field==='ded')row.ded=parseFloat(val)||0;
+  if(field==='ot')row.ot=parseFloat(val)||0;
+  if(field==='pct')row.pct=parseFloat(val)||0;
+  var r=calcSalary(row.emp,row.ded,row.ot);
+  var finalNet=r.net+row.pct-row.loanDed;
+  var finalEGP=r.isEGP?finalNet:(usdEgpRate?finalNet*usdEgpRate:null);
+  document.getElementById('bded'+i).textContent=row.ded>0?(r.isEGP?'−EGP '+Math.round(r.dedAmt):'−'+fmtUSD(r.dedAmt)):'—';
+  document.getElementById('bot'+i).textContent=row.ot>0?(r.isEGP?'+EGP '+Math.round(r.otAmt):'+'+fmtUSD(r.otAmt)):'—';
+  document.getElementById('bnet'+i).textContent=r.isEGP?fmtEGP(finalNet):fmtUSD(finalNet);
+  document.getElementById('begp'+i).textContent=finalEGP?fmtEGP(finalEGP):(r.isEGP?fmtEGP(finalNet):'—');
+  updateBatchTotals();
+}
+
+function updateBatchTotals(){
+  var tu=0,te=0;
+  batchRows.forEach(function(row){
+    var r=calcSalary(row.emp,row.ded,row.ot);
+    var finalNet=r.net+(row.pct||0)-row.loanDed;
+    var finalEGP=r.isEGP?finalNet:(usdEgpRate?finalNet*usdEgpRate:null);
+    if(!r.isEGP)tu+=finalNet;
+    if(finalEGP)te+=finalEGP;
+    if(r.isEGP)te+=finalNet;
+  });
+  document.getElementById('batchTotalUSD').textContent=fmtUSD(tu);
+  document.getElementById('batchTotalEGP').textContent=fmtEGP(te);
+}
+
+function saveBatch(){
+  if(!batchRows.length){toast('Run batch first','err');return;}
+  var rateUsed=usdEgpRate;
+  var savedCount=0;
+  batchRows.forEach(function(row){
+    var r=calcSalary(row.emp,row.ded,row.ot);
+    var finalNet=r.net+(row.pct||0)-row.loanDed;
+    var finalEGP=r.isEGP?finalNet:(rateUsed?finalNet*rateUsed:null);
+    upsertReport({employee:row.emp.name,role:row.emp.role,month:MONTHS[row.month],year:row.year,currency:row.emp.currency,base:row.emp.salary,deductDays:row.ded,deductAmt:parseFloat(r.dedAmt.toFixed(2)),otDays:row.ot,otAmt:parseFloat(r.otAmt.toFixed(2)),loanMonthly:parseFloat(row.loanDed.toFixed(2)),netUSD:r.isEGP?null:parseFloat(finalNet.toFixed(2)),netEGP:finalEGP?Math.round(finalEGP):null,rate:(!r.isEGP&&rateUsed)?parseFloat(rateUsed.toFixed(4)):null});
+    savedCount++;
+  });
+  var banner=document.getElementById('batchSavedBanner');
+  var monthName=MONTHS[batchRows[0].month];
+  var yr=batchRows[0].year;
+  var rateNote=rateUsed?(' · Rate used: 1 USD = '+rateUsed.toFixed(4)+' EGP'):'';
+  banner.innerHTML='✅ Saved '+savedCount+' employees for <b>'+monthName+' '+yr+'</b>'+rateNote+' · <span onclick="switchTab(\'report\')" style="color:#166534;text-decoration:underline;cursor:pointer">View in Reports →</span>';
+  banner.style.display='block';
+  toast('✅ '+savedCount+' records saved for '+monthName+' '+yr);
+}
+
+/* ── LOANS ── */
+async function addLoan(){
+  var empName=document.getElementById('loanEmp').value;
+  var amt=parseFloat(document.getElementById('loanAmt').value)||0;
+  var currency=document.getElementById('loanCurrency').value;
+  var months=parseInt(document.getElementById('loanMonths').value)||1;
+  var startMonthIdx=parseInt(document.getElementById('loanStartMonth').value);
+  var startYear=parseInt(document.getElementById('loanStartYear').value);
+  if(!empName){toast('Select an employee','err');return;}
+  if(amt<=0){toast('Enter a loan amount','err');return;}
+  var loan={company:currentCompany.id,employee:empName,amount:amt,currency:currency,months:months,startMonthIdx:startMonthIdx,startYear:startYear};
+  var loanId=currentCompany.id+'_loan_'+Date.now();
+  loan.id=loanId;
+  loans.push(loan);
+  localStorage.setItem(currentCompany.sLoans,JSON.stringify(loans));
+  if(IS_HOSTED){try{var jb=await jbRead();jb[currentCompany.id]=jb[currentCompany.id]||{};var ls=jb[currentCompany.id].loans||[];ls.push(loan);jb[currentCompany.id].loans=ls;await jbWrite(jb);}catch(e){console.error('addLoan:',e);}}
+  document.getElementById('loanAmt').value='';
+  document.getElementById('loanMonths').value=3;
+  renderLoans();
+  toast('Loan added for '+empName+' — deductions start '+MONTHS[(startMonthIdx+1)%12]);
+}
+
+async function deleteLoanByIndex(idx){
+  var loan=loans[parseInt(idx)];
+  if(!loan)return;
+  return deleteLoan(loan.id);
+}
+async function deleteLoan(id){
+  loans=loans.filter(function(l){return String(l.id)!==String(id);});
+  localStorage.setItem(currentCompany.sLoans,JSON.stringify(loans));
+  renderLoans();
+  toast('Loan removed');
+  if(IS_HOSTED){try{var jb=await jbRead();jb[currentCompany.id]=jb[currentCompany.id]||{};jb[currentCompany.id].loans=(jb[currentCompany.id].loans||[]).filter(function(l){return String(l.id)!==String(id);});await jbWrite(jb);}catch(e){console.error('deleteLoan:',e);}}
+}
+
+function renderLoans(){
+  var tbody=document.getElementById('loansBody');
+  if(!loans.length){tbody.innerHTML='<tr><td colspan="8" class="empty-msg">No loans registered yet.</td></tr>';return;}
+  var now=new Date();
+  var nowYear=now.getFullYear(),nowMonth=now.getMonth();
+  tbody.innerHTML=loans.map(function(l,li){
+    var monthly=l.amount/l.months;
+    var deductMonths=loanDeductionMonths(l);
+    var paid=deductMonths.filter(function(m){return m<=toMonthIndex(nowYear,nowMonth);}).length;
+    var settled=paid>=l.months;
+    var pct=Math.round((paid/l.months)*100);
+    var firstDed=deductMonths[0];
+    var firstYear=Math.floor(firstDed/12),firstM=firstDed%12;
+    var lastDed=deductMonths[deductMonths.length-1];
+    var lastYear=Math.floor(lastDed/12),lastM=lastDed%12;
+    return'<tr>'+
+      '<td><b>'+l.employee+'</b></td>'+
+      '<td>'+(l.currency==='USD'?fmtUSD(l.amount):fmtEGP(l.amount))+'<br/><span style="font-size:11px;color:var(--muted)">'+l.months+' months</span></td>'+
+      '<td style="font-weight:600;color:var(--amber)">'+(l.currency==='USD'?fmtUSD(monthly):fmtEGP(monthly))+'/mo</td>'+
+      '<td style="font-size:12px">'+MONTHS[l.startMonthIdx].slice(0,3)+' '+l.startYear+'<br/><span style="color:var(--muted)">→ '+MONTHS[firstM].slice(0,3)+' '+firstYear+'</span></td>'+
+      '<td style="font-size:12px">'+paid+' / '+l.months+'<br/><span style="color:var(--muted);font-size:11px">ends '+MONTHS[lastM].slice(0,3)+' '+lastYear+'</span></td>'+
+      '<td style="min-width:80px"><div class="progress-bar"><div class="progress-fill'+(settled?' done':'')+'" style="width:'+pct+'%"></div></div><span style="font-size:10px;color:var(--muted)">'+pct+'%</span></td>'+
+      '<td><span class="loan-badge '+(settled?'done':'active')+'">'+(settled?'✓ Settled':'Active')+'</span></td>'+
+      '<td><button class="icon-btn" onclick="deleteLoanByIndex('+li+')">×</button></td></tr>';
+  }).join('');
+}
+
+/* ── DB ── */
+function readDBFromTable(){
+  var rows=document.querySelectorAll('#dbBody tr'),updated=[];
+  rows.forEach(function(tr,i){
+    var inputs=tr.querySelectorAll('input,select');
+    var name=inputs[0].value.trim();
+    if(!name)return;
+    updated.push({name:name,role:inputs[1].value.trim(),salary:parseFloat(inputs[2].value)||0,currency:inputs[3].value,otRate:employees[i]?employees[i].otRate:null});
+  });
+  return updated;
+}
+
+async function saveDB(){
+  employees=readDBFromTable();
+  // Always save locally first
+  localStorage.setItem(currentCompany.sEmp,JSON.stringify(employees));
+  populateSelects();
+  if(IS_HOSTED){
+    setSyncStatus('syncing','Saving…');
+    try{
+      var jb=await jbRead();
+      jb[currentCompany.id]=jb[currentCompany.id]||{};
+      jb[currentCompany.id].employees=employees;
+      await jbWrite(jb);
+      setSyncStatus('synced','✅ Saved & synced · '+new Date().toLocaleTimeString());
+      toast('Saved & synced to all computers');
+    }catch(e){console.error(e);setSyncStatus('','Save error — kept locally');toast('Saved locally only');}
+  } else {
+    setSyncStatus('synced','Saved locally on this browser');
+    toast('Database saved');
+  }
+}
+
+function sortEmployees(){
+  employees=readDBFromTable();
+  employees.sort(function(a,b){return a.name.localeCompare(b.name);});
+  renderDB();
+  toast('Sorted A–Z');
+}
+
+function renderDB(){
+  var tbody=document.getElementById('dbBody');
+  tbody.innerHTML='';
+  employees.forEach(function(e,i){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td style="color:var(--muted);font-size:12px">'+(i+1)+'</td>'+
+      '<td><input type="text" value="'+escH(e.name)+'" style="min-width:130px"/></td>'+
+      '<td><input type="text" value="'+escH(e.role||'')+'" style="min-width:120px"/></td>'+
+      '<td><input type="number" value="'+e.salary+'" style="width:80px"/></td>'+
+      '<td><select><option value="USD"'+(e.currency==='USD'?' selected':'')+'>USD</option><option value="EGP"'+(e.currency==='EGP'?' selected':'')+'>EGP</option></select></td>'+
+      '<td><button class="icon-btn" onclick="deleteEmp('+i+')">×</button></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function addEmployee(){
+  employees.push({name:'New Employee',role:'',salary:300,currency:'USD',otRate:null});
+  renderDB();
+  var rows=document.querySelectorAll('#dbBody tr');
+  rows[rows.length-1].querySelector('input').focus();
+  rows[rows.length-1].querySelector('input').select();
+}
+
+function deleteEmp(i){
+  if(!confirm('Remove '+employees[i].name+'?'))return;
+  employees.splice(i,1);
+  renderDB();
+  toast('Removed — click Save Changes to confirm');
+}
+
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+/* ── REPORT ── */
+function renderReport(){
+  var fm=document.getElementById('filterMonth').value;
+  var fy=document.getElementById('filterYear').value;
+  var data=reportData.filter(function(r){return(!fm||r.month===MONTHS[parseInt(fm)-1])&&(!fy||String(r.year)===fy);});
+  var tb=document.getElementById('reportBody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="10" class="empty-msg">No records yet.</td></tr>';return;}
+  tb.innerHTML=data.map(function(r){
+    return'<tr><td><b>'+r.employee+'</b><br/><span style="font-size:11px;color:var(--muted)">'+r.role+'</span></td>'+
+      '<td>'+r.month+' '+r.year+'</td>'+
+      '<td>'+(r.currency==='EGP'?'EGP '+Number(r.base).toLocaleString():'$'+r.base)+'</td>'+
+      '<td style="color:var(--accent)">'+(r.deductDays>0?r.deductDays+'d':'—')+'</td>'+
+      '<td style="color:var(--green)">'+(r.otDays>0?r.otDays+'d':'—')+'</td>'+
+      '<td style="color:var(--amber);font-weight:600">'+(r.loanMonthly>0?'−'+(r.currency==='EGP'?fmtEGP(r.loanMonthly):fmtUSD(r.loanMonthly)):'—')+'</td>'+
+      '<td>'+(r.netUSD!=null?'$'+Number(r.netUSD).toFixed(2):'—')+'</td>'+
+      '<td>'+(r.netEGP!=null?'EGP '+Number(r.netEGP).toLocaleString():'—')+'</td>'+
+      '<td style="color:var(--muted);font-size:11px">'+(r.rate?r.rate:'fixed')+'</td>'+
+      '<td><button class="del-btn" onclick="delReport(\''+r.id+'\')">×</button></td></tr>';
+  }).join('');
+}
+
+async function loadReport(){
+  var fm=document.getElementById('filterMonth').value;
+  var fy=document.getElementById('filterYear').value;
+  var qs='?company='+currentCompany.id+(fm?'&month='+MONTHS[parseInt(fm)-1]:'')+(fy?'&year='+fy:'');
+  try{
+    var data=await apiFetch('/api/payroll'+qs);
+    reportData=data.map(function(r){return{id:r.id,employee:r.employee_name,role:r.role,month:r.month,year:r.year,currency:r.currency,base:r.base_salary,deductDays:r.deduct_days,deductAmt:r.deduct_amt,otDays:r.ot_days,otAmt:r.ot_amt,loanMonthly:r.loan_monthly||0,netUSD:r.net_usd,netEGP:r.net_egp,rate:r.usd_rate};});
+  }catch(e){}
+  renderReport();
+}
+
+async function delReport(id){
+  if(!confirm('Remove this record?'))return;
+  reportData=reportData.filter(function(r){return r.id!==id;});
+  localStorage.setItem(currentCompany.sRep,JSON.stringify(reportData));
+  if(IS_HOSTED){try{var jb=await jbRead();jb[currentCompany.id]=jb[currentCompany.id]||{};jb[currentCompany.id].payroll=(jb[currentCompany.id].payroll||[]).filter(function(r){return r.id!==id;});await jbWrite(jb);}catch(e){}}
+  renderReport();
+  toast('Record removed');
+}
+
+function exportExcel(){
+  var fm=document.getElementById('filterMonth').value;
+  var fy=document.getElementById('filterYear').value;
+  var data=reportData.filter(function(r){return(!fm||r.month===MONTHS[parseInt(fm)-1])&&(!fy||String(r.year)===fy);});
+  if(!data.length){toast('No records to export','err');return;}
+  var rows=[["Employee","Role","Month","Year","Currency","Base","Ded.Days","Ded.Amt","OT Days","OT Amt","Loan/Month","Net USD","Net EGP","Rate"]];
+  data.forEach(function(r){rows.push([r.employee,r.role,r.month,r.year,r.currency,r.base,r.deductDays,r.deductAmt,r.otDays,r.otAmt,r.loanMonthly||0,r.netUSD!=null?r.netUSD:'',r.netEGP!=null?r.netEGP:'',r.rate!=null?r.rate:'fixed']);});
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[20,16,12,6,10,10,10,10,8,8,10,10,12,10].map(function(w){return{wch:w};});
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Payroll');
+  var byM={};
+  data.forEach(function(r){var k=r.month+' '+r.year;if(!byM[k])byM[k]={usd:0,egp:0,n:0};if(r.netUSD)byM[k].usd+=r.netUSD;if(r.netEGP)byM[k].egp+=r.netEGP;byM[k].n++;});
+  var sr=[["Period","Employees","Total Net USD","Total Net EGP"]];
+  Object.keys(byM).forEach(function(k){sr.push([k,byM[k].n,parseFloat(byM[k].usd.toFixed(2)),byM[k].egp]);});
+  var ws2=XLSX.utils.aoa_to_sheet(sr);
+  ws2['!cols']=[{wch:16},{wch:12},{wch:16},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Summary');
+  XLSX.writeFile(wb,currentCompany.name+'_Payroll_'+new Date().toISOString().slice(0,7)+'.xlsx');
+  toast('Excel exported');
+}
+
+/* ── INIT ── */
+function populateSelects(){
+  var es=document.getElementById('empSelect');
+  es.innerHTML='<option value="">— select employee —</option>';
+  employees.forEach(function(e,i){var o=document.createElement('option');o.value=i;o.textContent=e.name+' · '+e.role;es.appendChild(o);});
+  var le=document.getElementById('loanEmp');
+  le.innerHTML='<option value="">— select employee —</option>';
+  employees.forEach(function(e){var o=document.createElement('option');o.value=e.name;o.textContent=e.name;le.appendChild(o);});
+}
+
+function switchTab(tab){
+  var tabs=['calc','batch','loans','db','report'];
+  var isUHT=currentCompany&&currentCompany.id==='uht';
+  document.querySelectorAll('.tab').forEach(function(t,i){
+    t.classList.toggle('active',tabs[i]===tab);
+    isUHT?t.classList.add('uht-t'):t.classList.remove('uht-t');
+  });
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='db')renderDB();
+  if(tab==='loans')renderLoans();
+  if(tab==='report')loadReport();
+}
+
+async function fetchRate(){
+  var CACHE_KEY='cbe-rate-v5';
+  var today=new Date().toISOString().slice(0,10);
+
+  function setRateUI(rate,note,dotClass){
+    usdEgpRate=rate;
+    document.getElementById('rateDisplay').textContent='1 USD = '+rate.toFixed(4)+' EGP';
+    document.getElementById('rdot').className='rdot '+dotClass;
+    if(document.getElementById('rateNote'))document.getElementById('rateNote').textContent=note;
+  }
+
+  // 1. Check daily cache first — show green immediately if we have today's rate
+  try{
+    var cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
+    if(cached&&cached.date===today&&cached.rate>40){
+      setRateUI(cached.rate,'CBE rate · '+today+' · cbe.org.eg','live');
+    document.getElementById('batchRateAutoVal').textContent=cached.rate.toFixed(4);
+      return;
+    }
+  }catch(e){}
+
+  // 2. Show loading state while fetching
+  document.getElementById('rdot').className='rdot';
+  if(document.getElementById('rateNote'))document.getElementById('rateNote').textContent='Fetching CBE rate…';
+
+  // 3. Try live rate sources (CORS-friendly)
+  var sources=[
+    {url:'https://api.exchangerate-api.com/v4/latest/USD',get:function(d){return d.rates&&d.rates.EGP;}},
+    {url:'https://open.er-api.com/v6/latest/USD',get:function(d){return d.rates&&d.rates.EGP;}}
+  ];
+  for(var i=0;i<sources.length;i++){
+    try{
+      var resp=await fetch(sources[i].url);
+      var data=await resp.json();
+      var rate=sources[i].get(data);
+      if(rate&&rate>40&&rate<200){
+        rate=parseFloat(Number(rate).toFixed(4));
+        try{localStorage.setItem(CACHE_KEY,JSON.stringify({date:today,rate:rate}));}catch(e){}
+        setRateUI(rate,'CBE market rate · '+today+' · cbe.org.eg','live');
+        document.getElementById('batchRateAutoVal').textContent=rate.toFixed(4);
+        return;
+      }
+    }catch(e){}
+  }
+
+  // 4. Fallback: last cached any date
+  try{
+    var last=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
+    if(last&&last.rate>40){
+      setRateUI(last.rate,'Last known rate: '+last.date+' · cbe.org.eg (offline)','offline');
+      return;
+    }
+  }catch(e){}
+  setRateUI(52.65,'Offline — fallback rate · cbe.org.eg','offline');
+}
+
+// Populate all month selects
+['monthSel','batchMonth','filterMonth','loanStartMonth'].forEach(function(id){
+  var sel=document.getElementById(id);
+  var base=id==='filterMonth'?'<option value="">All months</option>':'';
+  sel.innerHTML=base;
+  MONTHS.forEach(function(m,i){
+    var o=document.createElement('option');
+    o.value=id==='loanStartMonth'?i:i+1;
+    o.textContent=m;
+    if(i===new Date().getMonth())o.selected=true;
+    sel.appendChild(o);
+  });
+});
+var fyEl=document.getElementById('filterYear');
+fyEl.innerHTML='<option value="">All years</option>';
+for(var y=2024;y<=2030;y++){var o=document.createElement('option');o.value=y;o.textContent=y;fyEl.appendChild(o);}
+document.getElementById('yearInp').value=new Date().getFullYear();
+document.getElementById('batchYear').value=new Date().getFullYear();
+document.getElementById('loanStartYear').value=new Date().getFullYear();
+// Clear all old rate cache keys on load
+['nbe-rate-v1','nbe-rate-cache','cbe-rate-v2','cbe-rate-v3','cbe-rate-v4'].forEach(function(k){localStorage.removeItem(k);});
+if(IS_HOSTED&&!hasSbConfig()){setTimeout(function(){var b=document.getElementById('sbSetupBtn');if(b){b.style.border='1px solid #5b9cf6';b.style.color='#5b9cf6';}},500);}
+fetchRate();
+</script>
+
+</body>
+</html>
