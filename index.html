@@ -251,7 +251,8 @@ select:focus,input:focus{border-color:var(--accent)}
               <th class="col-base">Base</th>
               <th class="col-ded">Ded.<br/>Days</th>
               <th class="col-ot">OT<br/>Days</th>
-              <th class="col-pct">Percentage</th>
+              <th class="col-pct" style="width:100px;letter-spacing:0;white-space:nowrap;padding-right:16px">Percentage</th>
+              <th class="col-bonus" style="width:90px;white-space:nowrap;padding-left:8px">Bonus</th>
               <th class="col-dedamt">Deduction</th>
               <th class="col-otamt">Overtime</th>
               <th class="col-loan">Loan/mo</th>
@@ -648,7 +649,7 @@ function runBatch(){
   tbody.innerHTML='';
   employees.forEach(function(emp,i){
     var loanDed=getEmployeeLoanDeduction(emp.name,year,month);
-    var row={emp:emp,ded:0,ot:0,pct:0,loanDed:loanDed,month:month,year:year};
+    var row={emp:emp,ded:0,ot:0,pct:0,bonus:0,loanDed:loanDed,month:month,year:year};
     batchRows.push(row);
     var tr=document.createElement('tr');
     tr.innerHTML=
@@ -657,7 +658,8 @@ function runBatch(){
       '<td style="font-size:12px">'+(emp.currency==='EGP'?'EGP '+emp.salary.toLocaleString():'$'+emp.salary)+'</td>'+
       '<td><input type="number" value="0" min="0" max="30" step="0.5" onchange="recalcRow('+i+',\'ded\',this.value)"/></td>'+
       '<td><input type="number" value="0" min="0" max="30" step="0.5" onchange="recalcRow('+i+',\'ot\',this.value)"/></td>'+
-      '<td><input type="number" value="0" min="0" step="0.01" placeholder="0" style="width:70px" onchange="recalcRow('+i+',\'pct\',this.value)" title="Extra amount (bonus/commission)"/></td>'+
+      '<td><input type="number" value="0" min="0" step="0.01" placeholder="0" style="width:70px" onchange="recalcRow('+i+',\'pct\',this.value)" title="Percentage amount"/></td>'+
+      '<td><input type="number" value="0" min="0" step="0.01" placeholder="0" style="width:70px" onchange="recalcRow('+i+',\'bonus\',this.value)" title="Bonus amount"/></td>'+
       '<td id="bded'+i+'" style="color:var(--accent);font-size:12px">—</td>'+
       '<td id="bot'+i+'" style="color:var(--green);font-size:12px">—</td>'+
       '<td id="bloan'+i+'" style="font-weight:600;font-size:12px;color:'+(loanDed<0?'var(--green)':loanDed>0?'var(--accent)':'var(--muted)')+'">'+(loanDed<0?'+'+(emp.currency==='EGP'?fmtEGP(-loanDed):fmtUSD(-loanDed))+'<br/><span style=\'font-size:10px;font-weight:400\'>received</span>':loanDed>0?'−'+(emp.currency==='EGP'?fmtEGP(loanDed):fmtUSD(loanDed))+'<br/><span style=\'font-size:10px;font-weight:400\'>deducted</span>':'—')+'</td>'+
@@ -674,8 +676,9 @@ function recalcRow(i,field,val){
   if(field==='ded')row.ded=parseFloat(val)||0;
   if(field==='ot')row.ot=parseFloat(val)||0;
   if(field==='pct')row.pct=parseFloat(val)||0;
+  if(field==='bonus')row.bonus=parseFloat(val)||0;
   var r=calcSalary(row.emp,row.ded,row.ot);
-  var finalNet=r.net+row.pct-row.loanDed;
+  var finalNet=r.net+row.pct+(row.bonus||0)-row.loanDed;
   var finalEGP=r.isEGP?finalNet:(usdEgpRate?finalNet*usdEgpRate:null);
   document.getElementById('bded'+i).textContent=row.ded>0?(r.isEGP?'−EGP '+Math.round(r.dedAmt):'−'+fmtUSD(r.dedAmt)):'—';
   document.getElementById('bot'+i).textContent=row.ot>0?(r.isEGP?'+EGP '+Math.round(r.otAmt):'+'+fmtUSD(r.otAmt)):'—';
@@ -688,7 +691,7 @@ function updateBatchTotals(){
   var tu=0,te=0;
   batchRows.forEach(function(row){
     var r=calcSalary(row.emp,row.ded,row.ot);
-    var finalNet=r.net+(row.pct||0)-row.loanDed;
+    var finalNet=r.net+(row.pct||0)+(row.bonus||0)-row.loanDed;
     var finalEGP=r.isEGP?finalNet:(usdEgpRate?finalNet*usdEgpRate:null);
     if(!r.isEGP)tu+=finalNet;
     if(finalEGP)te+=finalEGP;
@@ -704,7 +707,7 @@ function saveBatch(){
   var savedCount=0;
   batchRows.forEach(function(row){
     var r=calcSalary(row.emp,row.ded,row.ot);
-    var finalNet=r.net+(row.pct||0)-row.loanDed;
+    var finalNet=r.net+(row.pct||0)+(row.bonus||0)-row.loanDed;
     var finalEGP=r.isEGP?finalNet:(rateUsed?finalNet*rateUsed:null);
     upsertReport({employee:row.emp.name,role:row.emp.role,month:MONTHS[row.month],year:row.year,currency:row.emp.currency,base:row.emp.salary,deductDays:row.ded,deductAmt:parseFloat(r.dedAmt.toFixed(2)),otDays:row.ot,otAmt:parseFloat(r.otAmt.toFixed(2)),loanMonthly:parseFloat(row.loanDed.toFixed(2)),netUSD:r.isEGP?null:parseFloat(finalNet.toFixed(2)),netEGP:finalEGP?Math.round(finalEGP):null,rate:(!r.isEGP&&rateUsed)?parseFloat(rateUsed.toFixed(4)):null});
     savedCount++;
